@@ -1,0 +1,181 @@
+C51 COMPILER V9.00   MAIN                                                                  11/26/2012 11:23:14 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c OMF2 OPTIMIZE(9,SIZE) BROWSE DEBUG
+
+line level    source
+
+   1          /************************************************************ 
+   2          ***********************************************************/  
+   3          #include <stc89c51.h>
+   4          #include <stdio.h>
+   5          
+   6          /*****************小小调度器部分开始********************************************/ 
+   7          #define  _SS   static char lc=0; switch(lc){   case 0: lc=0;
+   8          #define  _EE   }; lc=0; 
+   9          #define  WaitX(a,b)  settimer(&lc,__LINE__,a,b); return ; case __LINE__:
+  10          struct TASK {
+  11            char td;
+  12            void (*fp)();
+  13          };
+  14          #define MAXTASKS 5
+  15          struct TASK tasks[MAXTASKS];
+  16          
+  17          //设置定时器
+  18          void settimer(char *lc,char  line,char  tmrid,int d){
+  19   1        *lc=line;
+  20   1        tasks[tmrid].td=d;
+  21   1      }
+  22          //逻辑定时器处理，在定时器中断里调用
+  23          void dectimers() { 
+  24   1       unsigned char i;   
+  25   1       for (i=0;i<MAXTASKS;i++){ 
+  26   2         if (tasks[i].td>0)  tasks[i].td--;  
+  27   2       }
+  28   1      }
+  29          //任务调度函数，在main里面运行
+  30          void runtasks() {
+  31   1         unsigned char i;    
+  32   1         for(i=0;i<MAXTASKS;i++)      
+  33   1         {   
+  34   2           if (tasks[i].fp!=0){    
+  35   3                 if (tasks[i].td==0){
+  36   4                   tasks[i].td=-1;  
+  37   4                   tasks[i].fp();
+  38   4                      }  
+  39   3               }       
+  40   2              }
+  41   1      }
+  42          /****************小小调度器部分结束*******************************************************/
+  43          
+  44          
+  45          sbit KEY = P3^2;
+  46          unsigned char code numtab[16]={0x24,0x6F,0xE0,0x62,0x2B,0x32,0x30,0x67,0x20,0x22,0x21,0x38,0xB4,0x68,0xB0,
+             -0xB1};
+  47          
+  48          
+  49          sfr IAP_CONTR = 0xC7;
+  50          sfr WDT_CONTR = 0xC1;
+  51          
+  52          //清除看门狗
+  53          void clr_wdt()
+  54          {
+C51 COMPILER V9.00   MAIN                                                                  11/26/2012 11:23:14 PAGE 2   
+
+  55   1        WDT_CONTR =0x3C; 
+  56   1      }
+  57          
+  58          //初始化定时器
+  59          void InitT0()
+  60          {
+  61   1              TMOD = 0x21;
+  62   1              IE |= 0x82;  // 12t
+  63   1              TL0=0Xff;
+  64   1              TH0=0Xb7;
+  65   1              TR0 = 1;
+  66   1      }
+  67          //定时器中断
+  68          void INTT0(void) interrupt 1 using 1
+  69          {
+  70   1              TL0=0Xff;    //10ms 重装
+  71   1              TH0=0Xb7;
+  72   1              dectimers();
+  73   1      }
+  74          
+  75          sbit LED1= P2^4;  
+  76          
+  77          //任务一，状态机写法
+  78          void ontimer0(){ 
+  79   1        LED1=!LED1;  // LED1引脚接在发光管负极，LED1=0 为亮，LED1=1为灭。
+  80   1      
+  81   1        //重装定时器
+  82   1        if (LED1) tasks[0].td=45;  //450mS 灭
+  83   1        else tasks[0].td=5;  //50ms  亮
+  84   1      }
+  85          
+  86          //任务二，状态机写法
+  87          char keycount=0;
+  88          void task1(){
+  89   1       if(KEY==0) {
+  90   2         keycount++;
+  91   2         if (keycount>20) IAP_CONTR = 0x60;
+  92   2       }
+  93   1       else{
+  94   2          keycount=0;
+  95   2       }
+  96   1       //重装定时器
+  97   1       tasks[1].td=5;
+  98   1      }
+  99          
+ 100          
+ 101          //任务三，伪线程写法
+ 102          void  task2()
+ 103          {
+ 104   1       static char i;
+ 105   1      _SS
+ 106   2      
+ 107   2      while(1){
+ 108   3      
+ 109   3       for(i=0;i<=9;i++){ //从0--9快速显示，间隔200mS
+ 110   4        WaitX(2,20);
+ 111   4        P1=numtab[i];
+ 112   4       }
+ 113   3       for(i=0;i<=9;i++){ //从0--9慢速显示，间隔500mS
+ 114   4        WaitX(2,50);
+ 115   4        P1=numtab[i];
+ 116   4       }
+C51 COMPILER V9.00   MAIN                                                                  11/26/2012 11:23:14 PAGE 3   
+
+ 117   3      }
+ 118   2      
+ 119   2      _EE
+ 120   1      }
+ 121          
+ 122          
+ 123          
+ 124          void main()
+ 125          {
+ 126   1              unsigned char   KeyNum;
+ 127   1              P3M0 = 0x00;
+ 128   1              P3M1 =0x00;
+ 129   1              //WDT_CONTR= 0x00;   //关闭看门狗
+ 130   1              P1 = 0xff;         //关显示
+ 131   1      
+ 132   1              clr_wdt();
+ 133   1      
+ 134   1              InitT0();
+ 135   1      
+ 136   1              KEY =1;                         //按键IO口
+ 137   1              KeyNum=0;                       //按下次数
+ 138   1      
+ 139   1          //装载任务:
+ 140   1              tasks[0].fp=ontimer0; 
+ 141   1              tasks[1].fp=task1; 
+ 142   1              tasks[2].fp=task2; 
+ 143   1       
+ 144   1          //循环调度
+ 145   1              while(1){
+ 146   2               runtasks();
+ 147   2               clr_wdt();
+ 148   2              }
+ 149   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    341    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     23       9
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
