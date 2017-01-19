@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+environment/project/iar.arm.toolchain.project.exe.configuration.debug.v5.4.0.763011214/PATH/delimiter=;
+environment/project/iar.arm.toolchain.project.exe.configuration.debug.v5.4.0.763011214/PATH/operation=replace
+environment/project/iar.arm.toolchain.project.exe.configuration.debug.v5.4.0.763011214/PATH/value=A\:\\IAR Embeded Workbench\\arm\\bin
+environment/project/iar.arm.toolchain.project.exe.configuration.debug.v5.4.0.763011214/append=true
+environment/project/iar.arm.toolchain.project.exe.configuration.debug.v5.4.0.763011214/appendContributed=true

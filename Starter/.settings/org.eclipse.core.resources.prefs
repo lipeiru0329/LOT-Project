@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+encoding//APP/src/main.c=UTF-8
+encoding//APP/src/stm32f10x_it.c=UTF-8
+encoding//BSP/inc/BSP.h=UTF-8
+encoding//BSP/src/BSP.c=UTF-8
